@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - release/**
+      - stable
+  pull_request:
+    branches:
+      - main
+      - release/**
+      - codex/**
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        std: [11, 17]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install compiler (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: choco install mingw -y --no-progress
+      - name: Build and test
+        shell: bash
+        run: |
+          EXE=""
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then EXE=".exe"; fi
+          g++ -std=c++${{ matrix.std }} -O3 tests/test_kat.cpp tests/rfc8032_vectors.cpp -o test_kat
+          ./test_kat$EXE
+          g++ -std=c++${{ matrix.std }} -O3 tests/test_sign_verify.cpp tests/rfc8032_vectors.cpp -o test_sign_verify
+          ./test_sign_verify$EXE
